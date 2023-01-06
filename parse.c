@@ -6,20 +6,20 @@
 /*   By: elpastor <elpastor@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/14 17:46:00 by elpastor          #+#    #+#             */
-/*   Updated: 2023/01/05 20:29:15 by elpastor         ###   ########.fr       */
+/*   Updated: 2023/01/06 19:21:30 by elpastor         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-Proteger ft_strlen, ajouter GNL
+// Proteger ft_strlen, ajouter GNL
 
-typedef enum s_type
-{
-	north,
-	south,
-	west,
-	east,
-}	t_type;
-ajouter dans cub.h
+// typedef enum s_type
+// {
+// 	north,
+// 	south,
+// 	west,
+// 	east,
+// }	t_type;
+// ajouter dans cub.h
 
 #include "cub.h"
 
@@ -88,7 +88,7 @@ char	*file_to_str(char *fichier)
 	return (str);
 }
 
-char	*get_path_texture(char *s)
+char	*get_path_texture(char *s, int *count)
 {
 	int		i;
 	int		j;
@@ -107,10 +107,11 @@ char	*get_path_texture(char *s)
 		j++;
 	}
 	path_texture[j] = 0;
+	*count += i;
 	return (path_texture);
 }
 
-void	get_texture(char *s, t_vars *vars, int texture_type)
+int	get_texture(char *s, t_vars *vars, int texture_type)
 {
 	int		i;
 
@@ -127,7 +128,8 @@ void	get_texture(char *s, t_vars *vars, int texture_type)
 	}
 	if (s[i] == '\n')
 		ft_print_error_exit("Error\nFile '.cub' invalid, no texture\n");
-	vars->textures[texture_type] = get_path_texture(&s[i]);
+	vars->textures[texture_type] = get_path_texture(&s[i], &i);
+	return (i + 1);
 }
 
 
@@ -153,7 +155,7 @@ int		check_color(char *s)
 	return (1);
 }
 
-void	get_color(char *s, t_vars *vars)
+int	get_color(char *s, t_vars *vars)
 {
 	int	i;
 	int	red;
@@ -178,9 +180,27 @@ void	get_color(char *s, t_vars *vars)
 		vars->floor = red << 16 | green << 8 | blue;
 	else
 		vars->ceiling = red << 16 | green << 8 | blue;
+	return (i + 1);
 }
 
-void	get_color_and_texture(char *s, t_vars *vars)
+int	is_in_map(char *s)
+{
+	int	i;
+
+	i = 0;
+	if (s[i] == '\n')
+		return (0);
+	while (s[i] && s[i] != '\n')
+	{
+		if (s[i] != '0' && s[i] != '1' && s[i] != 'N' && s[i] != 'S'
+				&& s[i] != 'W' && s[i] != 'E' && s[i] != ' ')
+			return (0);
+		i++;
+	}
+	return (1);
+}
+
+int	get_color_and_texture(char *s, t_vars *vars)
 {
 	int	i;
 
@@ -189,40 +209,62 @@ void	get_color_and_texture(char *s, t_vars *vars)
 	while (s[i])
 	{
 		if (s[i] == 'N' && s[i + 1] == 'O')
-			get_texture(&s[i], vars, 0);
+			i += get_texture(&s[i], vars, 0);
 		else if (s[i] == 'S' && s[i + 1] == 'O')
-			get_texture(&s[i], vars, 1);
+			i += get_texture(&s[i], vars, 1);
 		else if (s[i] == 'W' && s[i + 1] == 'E')
-			get_texture(&s[i], vars, 2);
+			i += get_texture(&s[i], vars, 2);
 		else if (s[i] == 'E' && s[i + 1] == 'A')
-			get_texture(&s[i], vars, 3);
+			i += get_texture(&s[i], vars, 3);
 		else if (s[i] == 'F' || s[i] == 'C')
-			get_color(&s[i], vars);
+			i += get_color(&s[i], vars);
+		else if (is_in_map(&s[i]))
+			break;
+		else
+			i++;
+	}
+	return (i);
+}
+
+int	map_is_valid(char *s)
+{
+	int	i;
+
+	i = 0;
+	while (s[i])
+	{
+		if (s[i] != '0' && s[i] != '1' && s[i] != 'N' && s[i] != 'S'
+				&& s[i] != 'W' && s[i] != 'E' && s[i] != ' ' && s[i] != '\n')
+			return (0);
 		i++;
 	}
+	return (1);
+}
+
+void	get_map(char *s)
+{
+	int	i;
+
+	i = 0;
+	if (!map_is_valid(s))
+		ft_print_error_exit("Error\nFile '.cub' invalid, wrong char in map\n");
+	while (s[i])
+	{
+		//reecrire a map dans vars->map
+	
+		i++;
+	}
+	//tester si la map est fermee
 }
 
 void	parsing(char *fichier, t_vars *vars)
 {
 	char	*str;
+	int		i;
 
 	str = file_to_str(fichier);
 	if (!str)
 		ft_print_error_exit("Error\nFile '.cub' empty\n");
-	get_color_and_texture(str, vars);
-	//MAP
+	i = get_color_and_texture(str, vars);
+	get_map(&str[i]);
 }
-
-// int	error_map(char *map)
-// {
-// 	int	i;
-
-// 	if (!map);
-// 		return (1);
-// 	i = 0;
-// 	while (map[i])
-// 	{
-		
-// 	}
-	
-// }
