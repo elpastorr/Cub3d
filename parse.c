@@ -6,7 +6,7 @@
 /*   By: elpastor <elpastor@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/14 17:46:00 by elpastor          #+#    #+#             */
-/*   Updated: 2023/01/06 19:21:30 by elpastor         ###   ########.fr       */
+/*   Updated: 2023/01/07 18:34:05 by elpastor         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -188,8 +188,6 @@ int	is_in_map(char *s)
 	int	i;
 
 	i = 0;
-	if (s[i] == '\n')
-		return (0);
 	while (s[i] && s[i] != '\n')
 	{
 		if (s[i] != '0' && s[i] != '1' && s[i] != 'N' && s[i] != 'S'
@@ -218,7 +216,7 @@ int	get_color_and_texture(char *s, t_vars *vars)
 			i += get_texture(&s[i], vars, 3);
 		else if (s[i] == 'F' || s[i] == 'C')
 			i += get_color(&s[i], vars);
-		else if (is_in_map(&s[i]))
+		else if (s[i] != '\n' && is_in_map(&s[i]))
 			break;
 		else
 			i++;
@@ -241,17 +239,35 @@ int	map_is_valid(char *s)
 	return (1);
 }
 
-void	get_map(char *s)
+// int	map_height(char *s)
+// {
+// 	int	i;
+// 	int	count;
+
+// 	i = 0;
+// 	count = 0;
+// 	while (s[i] && is_in_map(&s[i]))
+// 	{
+// 		if (s[i] == '\n')
+// 			count++;
+// 		i++;
+// 	}
+// 	printf("count = %d\n", count);
+// 	return (count);
+// }
+
+void	get_map(char *s, t_vars *vars)
 {
 	int	i;
+	int	max_lenght;
 
-	i = 0;
 	if (!map_is_valid(s))
 		ft_print_error_exit("Error\nFile '.cub' invalid, wrong char in map\n");
-	while (s[i])
+	i = 0;
+	vars->map = ft_split(s, '\n');
+	while (vars->map[i])
 	{
-		//reecrire a map dans vars->map
-	
+		printf("|%s|\n", vars->map[i]);
 		i++;
 	}
 	//tester si la map est fermee
@@ -266,5 +282,5 @@ void	parsing(char *fichier, t_vars *vars)
 	if (!str)
 		ft_print_error_exit("Error\nFile '.cub' empty\n");
 	i = get_color_and_texture(str, vars);
-	get_map(&str[i]);
+	get_map(&str[i], vars);
 }
