@@ -6,7 +6,7 @@
 /*   By: elpastor <elpastor@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/14 17:46:00 by elpastor          #+#    #+#             */
-/*   Updated: 2023/01/07 18:34:05 by elpastor         ###   ########.fr       */
+/*   Updated: 2023/01/09 17:50:37 by elpastor         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -177,9 +177,9 @@ int	get_color(char *s, t_vars *vars)
 	if (red < 0 || red > 255 || green < 0 || green > 255 || blue < 0 || blue > 255)
 		ft_print_error_exit("Error\nFile '.cub' invalid color values\n");
 	if (s[0] == 'F')
-		vars->floor = red << 16 | green << 8 | blue;
+		vars->floor = rgb2img(red << 16 | green << 8 | blue);
 	else
-		vars->ceiling = red << 16 | green << 8 | blue;
+		vars->ceiling = rgb2img(red << 16 | green << 8 | blue);
 	return (i + 1);
 }
 
@@ -227,50 +227,130 @@ int	get_color_and_texture(char *s, t_vars *vars)
 int	map_is_valid(char *s)
 {
 	int	i;
+	int	ret;
 
 	i = 0;
+	ret = 0;
 	while (s[i])
 	{
 		if (s[i] != '0' && s[i] != '1' && s[i] != 'N' && s[i] != 'S'
 				&& s[i] != 'W' && s[i] != 'E' && s[i] != ' ' && s[i] != '\n')
+			return (0);
+		if (ret == 0 && (s[i] == 'N' || s[i] == 'S' || s[i] == 'W' || s[i] == 'E'))
+			ret = 1;
+		else if (ret == 1 && (s[i] == 'N' || s[i] == 'S' || s[i] == 'W' || s[i] == 'E'))
 			return (0);
 		i++;
 	}
 	return (1);
 }
 
-// int	map_height(char *s)
-// {
-// 	int	i;
-// 	int	count;
+int	map_height(char *s)
+{
+	int	i;
+	int	count;
 
-// 	i = 0;
-// 	count = 0;
-// 	while (s[i] && is_in_map(&s[i]))
-// 	{
-// 		if (s[i] == '\n')
-// 			count++;
-// 		i++;
-// 	}
-// 	printf("count = %d\n", count);
-// 	return (count);
-// }
+	i = 0;
+	count = 0;
+	while (s[i] && is_in_map(&s[i]))
+	{
+		if (s[i] == '\n')
+			count++;
+		i++;
+	}
+	return (count);
+}
+
+int	get_map_length(char **map)
+{
+	int	i;
+	int	max;
+	
+	i = 0;
+	max = 0;
+	while (map[i])
+	{
+		if ((int)ft_strlen(map[i]) > max)
+			max = ft_strlen(map[i]);
+		i++;
+	}
+	return (max);
+}
+
+void	get_map_line(char **new_map, char *map, int map_length)
+{
+	int	i;
+
+	new_map[0] = (char *)malloc(sizeof(char) * (map_length + 1));
+	if (!new_map[0])
+		ft_print_error_exit("Error\nMalloc failed\n");
+	i = 0;
+	while (map[i])
+	{
+		if (map[i] == ' ')
+			new_map[0][i] = '1';
+		else
+			new_map[0][i] = map[i];
+		i++;
+	}
+	while (i < map_length)
+	{
+		new_map[0][i] = '1';
+		i++;
+	}
+	new_map[0][i] = 0;
+}
+
+int	map_is_closed(char **map)
+{
+	int	i;
+	int	j;
+
+	i = -1;
+	while (map[++i])
+		if (map[i][0] != '1')
+			return (0);
+	j = -1;
+	i--;
+	while (map[i][++j])
+		if (map[i][j] != '1')
+			return (0);
+	j--;
+	i++;
+	while (--i >= 0)
+		if (map[i][j] != '1')
+			return (0);
+	i++;
+	while (j >= 0)
+	{
+		if (map[i][j] != '1')
+			return (0);
+		j--;
+	}
+	return (1);
+}
 
 void	get_map(char *s, t_vars *vars)
 {
-	int	i;
-	int	max_lenght;
+	int		i;
+	char	**map;
 
 	if (!map_is_valid(s))
-		ft_print_error_exit("Error\nFile '.cub' invalid, wrong char in map\n");
+		ft_print_error_exit("Error\nFile '.cub' invalid, wrong char in map or 2 players in map\n");
+	map = ft_split(s, '\n');
 	i = 0;
-	vars->map = ft_split(s, '\n');
-	while (vars->map[i])
+	vars->map = (char **)malloc(sizeof(char *) * (map_height(s) + 1));
+	if (!vars->map)
+		ft_print_error_exit("Error\nMalloc failed\n");
+	while (map[i])
 	{
-		printf("|%s|\n", vars->map[i]);
+		get_map_line(&vars->map[i], map[i], get_map_length(map));
 		i++;
 	}
-	//tester si la map est fermee
+	printf("i = %d\n", i);
+	vars->map[i] = 0;
+	if (!map_is_closed(vars->map))
+		ft_print_error_exit("Error\nFile '.cub' invalid, map is not closed\n");
 }
 
 void	parsing(char *fichier, t_vars *vars)
@@ -283,4 +363,5 @@ void	parsing(char *fichier, t_vars *vars)
 		ft_print_error_exit("Error\nFile '.cub' empty\n");
 	i = get_color_and_texture(str, vars);
 	get_map(&str[i], vars);
+	free(str);
 }
