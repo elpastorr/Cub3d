@@ -6,7 +6,7 @@
 /*   By: elpastor <elpastor@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/14 17:46:00 by elpastor          #+#    #+#             */
-/*   Updated: 2023/01/10 20:30:17 by elpastor         ###   ########.fr       */
+/*   Updated: 2023/01/11 18:27:52 by elpastor         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,9 @@
 // 	east,
 // }	t_type;
 // ajouter dans cub.h
+
+//initialiser vars->floor et vars->ceiling = -1
+//initialiser textures[0-3] = NULL;
 
 #include "cub.h"
 
@@ -173,7 +176,7 @@ int	get_color(char *s, t_vars *vars)
 	int	green;
 	int	blue;
 
-	if (!check_color(s))
+	if (!check_color(s) || (s[0] == 'F' && vars->floor != -1) || (s[0] == 'C' && vars->ceiling != -1))
 		ft_print_error_exit("Error\nFile '.cub' invalid color syntax\n");
 	i = 1;
 	red = 0;
@@ -257,6 +260,8 @@ int	map_is_valid(char *s)
 			return (0);
 		i++;
 	}
+	if (ret == 0)
+		return (0);
 	return (1);
 }
 
@@ -332,14 +337,11 @@ int	map_is_closed(char **map)
 	int	j;
 
 	i = -1;
-	printf("yo1\n");
-
 	while (map[++i])
 		if (map[i][0] != '1')
 			return (0);
 	j = -1;
 	i--;
-	printf("i = %d, j = %d\n", i, j);
 	while (map[i][++j])
 		if (map[i][j] != '1')
 			return (0);
@@ -364,7 +366,7 @@ void	get_map(char *s, t_vars *vars)
 	char	**map;
 
 	if (!map_is_valid(s))
-		ft_print_error_exit("Error\nFile '.cub' invalid, wrong char in map or 2 players in map\n");
+		ft_print_error_exit("Error\nFile '.cub' invalid, wrong char in map or wrong number of players\n");
 	map = ft_split(s, '\n');
 	i = 0;
 	vars->map = (char **)malloc(sizeof(char *) * (get_map_height(s) + 1));
@@ -376,8 +378,9 @@ void	get_map(char *s, t_vars *vars)
 		i++;
 	}
 	vars->map[i] = 0;
-	printf("%d, %d\n", map_length(vars->map), map_height(vars->map));
-	if (!map_length(vars->map) || !map_height(vars->map))
+	if (i != get_map_height(s))
+		ft_print_error_exit("Error\nFile '.cub' invalid, map has empty line\n");
+	if (map_length(vars->map) < 3 || map_height(vars->map) < 3)
 		ft_print_error_exit("Error\nFile '.cub' invalid, map is too tiny\n");
 	if (!map_is_closed(vars->map))
 		ft_print_error_exit("Error\nFile '.cub' invalid, map is not closed\n");
@@ -391,6 +394,11 @@ void	parsing(char *fichier, t_vars *vars)
 	vars->textures = (char **)malloc(sizeof(char *) * 4);
 	if (!vars->textures)
 		ft_print_error_exit("Error\nMalloc failed\n");
+	vars->floor = -1;
+	vars->ceiling = -1;
+	i = 0;
+	while (i < 4)
+		vars->textures[i++] = NULL;
 	str = file_to_str(fichier);
 	if (!str)
 		ft_print_error_exit("Error\nFile '.cub' empty\n");
