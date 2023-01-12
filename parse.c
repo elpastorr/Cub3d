@@ -6,11 +6,11 @@
 /*   By: elpastor <elpastor@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/14 17:46:00 by elpastor          #+#    #+#             */
-/*   Updated: 2023/01/11 18:27:52 by elpastor         ###   ########.fr       */
+/*   Updated: 2023/01/12 19:59:59 by elpastor         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-// Proteger ft_strlen, ajouter GNL
+// Proteger ft_strlen (if (!s) return (0)), ajouter GNL
 
 // typedef enum s_type
 // {
@@ -19,10 +19,11 @@
 // 	west,
 // 	east,
 // }	t_type;
-// ajouter dans cub.h
-
-//initialiser vars->floor et vars->ceiling = -1
-//initialiser textures[0-3] = NULL;
+//
+// void	parsing(char *fichier, t_vars *vars);
+//
+// ^ ajouter dans cub.h ^
+// et ajouter parse.c dans le makefile
 
 #include "cub.h"
 
@@ -114,22 +115,20 @@ char	*get_path_texture(char *s, int *count)
 	return (path_texture);
 }
 
-// t_img	*path2img(char *path)
-// {
-// 	t_img	*texture;
+void	path2img(char *path, t_img *texture, t_vars *vars)
+{
 
-// 	// texture = malloc(sizeof(t_img));
-// 	texture-> = mlx_xpm_file_to_image(texture->ptr, path, &(texture->px_length), &(texture->px_height));
-// 	if (!texture)
-// 		ft_print_error_exit("Error\nMlx File_to_image failed\n");
-// 	return (texture);
-// }
+	texture->ptr = mlx_xpm_file_to_image(vars->mlx, path, &(texture->px_length), &(texture->px_height));
+	if (texture->ptr == NULL)
+		ft_print_error_exit("Error\nMlx File_to_image failed\n");
+	texture->addr = mlx_get_data_addr(texture->ptr, &texture->bits_per_pixel, &texture->line_length, &texture->endian);
+}
 
 int	get_texture(char *s, t_vars *vars, int texture_type)
 {
 	int		i;
 
-	if (vars->textures[texture_type] != NULL)
+	if (vars->textures[texture_type].ptr != NULL)
 		ft_print_error_exit("Error\nFile '.cub' invalid, too much textures\n");
 	if (!find_char(s, '.') && !find_char(s, '/'))
 		ft_print_error_exit("Error\nFile '.cub' invalid, wrong texture format\n");
@@ -142,7 +141,7 @@ int	get_texture(char *s, t_vars *vars, int texture_type)
 	}
 	if (s[i] == '\n')
 		ft_print_error_exit("Error\nFile '.cub' invalid, no texture\n");
-	vars->textures[texture_type] = get_path_texture(&s[i], &i);
+	path2img(get_path_texture(&s[i], &i), &vars->textures[texture_type], vars);
 	return (i + 1);
 }
 
@@ -391,14 +390,14 @@ void	parsing(char *fichier, t_vars *vars)
 	char	*str;
 	int		i;
 
-	vars->textures = (char **)malloc(sizeof(char *) * 4);
+	vars->textures = (t_img *)malloc(sizeof(t_img) * 4);
 	if (!vars->textures)
 		ft_print_error_exit("Error\nMalloc failed\n");
 	vars->floor = -1;
 	vars->ceiling = -1;
 	i = 0;
 	while (i < 4)
-		vars->textures[i++] = NULL;
+		vars->textures[i++].ptr = NULL;
 	str = file_to_str(fichier);
 	if (!str)
 		ft_print_error_exit("Error\nFile '.cub' empty\n");
