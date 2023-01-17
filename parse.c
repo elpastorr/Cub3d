@@ -6,7 +6,7 @@
 /*   By: elpastor <elpastor@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/14 17:46:00 by elpastor          #+#    #+#             */
-/*   Updated: 2023/01/12 19:59:59 by elpastor         ###   ########.fr       */
+/*   Updated: 2023/01/17 18:52:18 by elpastor         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -119,9 +119,9 @@ void	path2img(char *path, t_img *texture, t_vars *vars)
 {
 
 	texture->ptr = mlx_xpm_file_to_image(vars->mlx, path, &(texture->px_length), &(texture->px_height));
-	if (texture->ptr == NULL)
-		ft_print_error_exit("Error\nMlx File_to_image failed\n");
-	texture->addr = mlx_get_data_addr(texture->ptr, &texture->bits_per_pixel, &texture->line_length, &texture->endian);
+	// if (texture->ptr == NULL)
+	// 	ft_print_error_exit("Error\nMlx File_to_image failed\n");
+	// texture->addr = mlx_get_data_addr(texture->ptr, &texture->bits_per_pixel, &texture->line_length, &texture->endian);
 }
 
 int	get_texture(char *s, t_vars *vars, int texture_type)
@@ -144,7 +144,6 @@ int	get_texture(char *s, t_vars *vars, int texture_type)
 	path2img(get_path_texture(&s[i], &i), &vars->textures[texture_type], vars);
 	return (i + 1);
 }
-
 
 int		check_color(char *s)
 {
@@ -199,18 +198,47 @@ int	get_color(char *s, t_vars *vars)
 int	is_in_map(char *s)
 {
 	int	i;
+	int	in_map;
 
 	i = 0;
+	in_map = 0;
 	if (!s)
 		return (0);
+	if (s[i] && s[i] == '\n' && (s[i + 1] == '0' || s[i + 1] == '1'
+			|| s[i + 1] == 'N' || s[i + 1] == 'S' || s[i + 1] == 'W'
+			|| s[i + 1] == 'E' || s[i + 1] == ' '))
+		return (1);
 	while (s[i] && s[i] != '\n')
 	{
 		if (s[i] != '0' && s[i] != '1' && s[i] != 'N' && s[i] != 'S'
 				&& s[i] != 'W' && s[i] != 'E' && s[i] != ' ')
 			return (0);
+		else
+			in_map = 1;
 		i++;
 	}
-	return (1);
+	return (in_map);
+}
+
+int	is_in_map_wbn(char *s)
+{
+	int	i;
+	int	in_map;
+
+	i = 0;
+	in_map = 0;
+	if (!s)
+		return (0);
+	while (s[i])
+	{
+		if (s[i] != '0' && s[i] != '1' && s[i] != 'N' && s[i] != 'S'
+				&& s[i] != 'W' && s[i] != 'E' && s[i] != ' ' && s[i] != '\n')
+			return (0);
+		else
+			in_map = 1;
+		i++;
+	}
+	return (in_map);
 }
 
 int	get_color_and_texture(char *s, t_vars *vars)
@@ -285,7 +313,7 @@ int	map_height(char **map)
 	int	i;
 
 	i = 0;
-	while (map[i] && is_in_map(map[i]))
+	while (map[i] && is_in_map_wbn(map[i]))
 		i++;
 	return (i);
 }
@@ -330,33 +358,21 @@ void	get_map_line(char **new_map, char *map, int map_length)
 	new_map[0][i] = 0;
 }
 
-int	map_is_closed(char **map)
+int	splited_map_is_closed(char **map)
 {
 	int	i;
 	int	j;
 
-	i = -1;
-	while (map[++i])
-		if (map[i][0] != '1')
-			return (0);
-	j = -1;
-	i--;
-	while (map[i][++j])
-		if (map[i][j] != '1')
-			return (0);
-	j--;
-	i++;
-	while (--i >= 0)
-		if (map[i][j] != '1')
-			return (0);
-	i++;
-	while (j >= 0)
+	j = 0;
+	while (map[j])
 	{
-		if (map[i][j] != '1')
-			return (0);
-		j--;
+		i = 0;
+		while (map[j][i])
+		{
+			
+		}
 	}
-	return (1);
+	return 0;
 }
 
 void	get_map(char *s, t_vars *vars)
@@ -365,8 +381,13 @@ void	get_map(char *s, t_vars *vars)
 	char	**map;
 
 	if (!map_is_valid(s))
-		ft_print_error_exit("Error\nFile '.cub' invalid, wrong char in map or wrong number of players\n");
+		ft_print_error_exit("Error\nFile '.cub' invalid map\n");
 	map = ft_split(s, '\n');
+	i = 0;
+	while (map[i])
+		i++;
+	// if (splited_map_is_closed(map))
+	// 	ft_print_error_exit("Error\nFile '.cub' invalid map not closed\n");
 	i = 0;
 	vars->map = (char **)malloc(sizeof(char *) * (get_map_height(s) + 1));
 	if (!vars->map)
@@ -377,12 +398,26 @@ void	get_map(char *s, t_vars *vars)
 		i++;
 	}
 	vars->map[i] = 0;
-	if (i != get_map_height(s))
+	if (i < get_map_height(s))
 		ft_print_error_exit("Error\nFile '.cub' invalid, map has empty line\n");
 	if (map_length(vars->map) < 3 || map_height(vars->map) < 3)
 		ft_print_error_exit("Error\nFile '.cub' invalid, map is too tiny\n");
-	if (!map_is_closed(vars->map))
-		ft_print_error_exit("Error\nFile '.cub' invalid, map is not closed\n");
+
+}
+
+void	verify_colors_and_texture(t_vars *vars)
+{
+	int	i;
+
+	i = 0;
+	if (vars->floor == -1 || vars->ceiling == -1)
+		ft_print_error_exit("Error\nFile '.cub' invalid, color not defined\n");
+	while (i < 4)
+	{
+		if (vars->textures[i].ptr == NULL)
+			ft_print_error_exit("Error\nFile '.cub' invalid, texture not defined\n");
+		i++;
+	}
 }
 
 void	parsing(char *fichier, t_vars *vars)
@@ -402,6 +437,7 @@ void	parsing(char *fichier, t_vars *vars)
 	if (!str)
 		ft_print_error_exit("Error\nFile '.cub' empty\n");
 	i = get_color_and_texture(str, vars);
+	verify_colors_and_texture(vars);
 	get_map(&str[i], vars);
 	free(str);
 }
