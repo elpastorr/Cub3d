@@ -12,19 +12,6 @@
 
 // Proteger ft_strlen (if (!s) return (0)), ajouter GNL
 
-// typedef enum s_type
-// {
-// 	north,
-// 	south,
-// 	west,
-// 	east,
-// }	t_type;
-//
-// void	parsing(char *fichier, t_vars *vars);
-//
-// ^ ajouter dans cub.h ^
-// et ajouter parse.c dans le makefile
-
 #include "cub.h"
 
 int	find_char(char *s, char c)
@@ -117,11 +104,10 @@ char	*get_path_texture(char *s, int *count)
 
 void	path2img(char *path, t_img *texture, t_vars *vars)
 {
-
 	texture->ptr = mlx_xpm_file_to_image(vars->mlx, path, &(texture->px_length), &(texture->px_height));
-	// if (texture->ptr == NULL)
-	// 	ft_print_error_exit("Error\nMlx File_to_image failed\n");
-	// texture->addr = mlx_get_data_addr(texture->ptr, &texture->bits_per_pixel, &texture->line_length, &texture->endian);
+	if (texture->ptr == NULL)
+		ft_print_error_exit("Error\nMlx File_to_image failed\n");
+	texture->addr = mlx_get_data_addr(texture->ptr, &texture->bits_per_pixel, &texture->line_length, &texture->endian);
 }
 
 int	get_texture(char *s, t_vars *vars, int texture_type)
@@ -174,7 +160,8 @@ int	get_color(char *s, t_vars *vars)
 	int	green;
 	int	blue;
 
-	if (!check_color(s) || (s[0] == 'F' && vars->floor != -1) || (s[0] == 'C' && vars->ceiling != -1))
+	if (!check_color(s) || (s[0] == 'F' && vars->floor != -1)
+			|| (s[0] == 'C' && vars->ceiling != -1))
 		ft_print_error_exit("Error\nFile '.cub' invalid color syntax\n");
 	i = 1;
 	red = 0;
@@ -186,7 +173,8 @@ int	get_color(char *s, t_vars *vars)
 		green = green * 10 + (s[i] - '0');
 	while (ft_isdigit(s[++i]))
 		blue = blue * 10 + (s[i] - '0');
-	if (red < 0 || red > 255 || green < 0 || green > 255 || blue < 0 || blue > 255)
+	if (red < 0 || red > 255 || green < 0 || green > 255 || blue < 0
+			|| blue > 255)
 		ft_print_error_exit("Error\nFile '.cub' invalid color values\n");
 	if (s[0] == 'F')
 		vars->floor = (red << 16 | green << 8 | blue);
@@ -246,7 +234,6 @@ int	get_color_and_texture(char *s, t_vars *vars)
 	int	i;
 
 	i = 0;
-
 	while (s[i])
 	{
 		if (s[i] == 'N' && s[i + 1] == 'O')
@@ -281,9 +268,11 @@ int	map_is_valid(char *s)
 		if (s[i] != '0' && s[i] != '1' && s[i] != 'N' && s[i] != 'S'
 				&& s[i] != 'W' && s[i] != 'E' && s[i] != ' ' && s[i] != '\n')
 			return (0);
-		if (ret == 0 && (s[i] == 'N' || s[i] == 'S' || s[i] == 'W' || s[i] == 'E'))
+		if (ret == 0 && (s[i] == 'N' || s[i] == 'S'
+				|| s[i] == 'W' || s[i] == 'E'))
 			ret = 1;
-		else if (ret == 1 && (s[i] == 'N' || s[i] == 'S' || s[i] == 'W' || s[i] == 'E'))
+		else if (ret == 1 && (s[i] == 'N' || s[i] == 'S'
+				|| s[i] == 'W' || s[i] == 'E'))
 			return (0);
 		i++;
 	}
@@ -358,21 +347,33 @@ void	get_map_line(char **new_map, char *map, int map_length)
 	new_map[0][i] = 0;
 }
 
-int	splited_map_is_closed(char **map)
+int	splited_map_is_closed(char **map, int j)
 {
 	int	i;
-	int	j;
 
-	j = 0;
 	while (map[j])
 	{
 		i = 0;
 		while (map[j][i])
 		{
-			
+			if (map[j][i] == '0' || map[j][i] == 'N' || map[j][i] == 'S'
+					|| map[j][i] == 'W' || map[j][i] == 'E')
+			{
+				if (j == 0 || i == 0)
+					return (0);
+				if ((int)ft_strlen(map[j - 1]) <= i || map[j - 1][i] == ' ')
+					return (0);
+				if ((int)ft_strlen(map[j + 1]) <= i || map[j + 1][i] == ' ')
+					return (0);
+				if (map[j][i - 1] == ' ' || !map[j][i + 1]
+						|| map[j][i + 1] == ' ')
+					return (0);
+			}
+			i++;
 		}
+		j++;
 	}
-	return 0;
+	return (1);
 }
 
 void	get_map(char *s, t_vars *vars)
@@ -383,11 +384,8 @@ void	get_map(char *s, t_vars *vars)
 	if (!map_is_valid(s))
 		ft_print_error_exit("Error\nFile '.cub' invalid map\n");
 	map = ft_split(s, '\n');
-	i = 0;
-	while (map[i])
-		i++;
-	// if (splited_map_is_closed(map))
-	// 	ft_print_error_exit("Error\nFile '.cub' invalid map not closed\n");
+	if (!splited_map_is_closed(map, 0))
+		ft_print_error_exit("Error\nFile '.cub' invalid map not closed\n");
 	i = 0;
 	vars->map = (char **)malloc(sizeof(char *) * (get_map_height(s) + 1));
 	if (!vars->map)
@@ -402,7 +400,6 @@ void	get_map(char *s, t_vars *vars)
 		ft_print_error_exit("Error\nFile '.cub' invalid, map has empty line\n");
 	if (map_length(vars->map) < 3 || map_height(vars->map) < 3)
 		ft_print_error_exit("Error\nFile '.cub' invalid, map is too tiny\n");
-
 }
 
 void	verify_colors_and_texture(t_vars *vars)
